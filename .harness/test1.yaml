@@ -1,0 +1,8 @@
+pipeline:
+  name: test1
+  identifier: test1
+  projectIdentifier: python_githubaction
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - test1: 1
