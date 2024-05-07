@@ -1,0 +1,9 @@
+---
+pipeline:
+  projectIdentifier: "python_githubaction"
+  orgIdentifier: "default"
+  tags: {}
+  stages:
+  - test1: 1
+  identifier: "test1_Clone"
+  name: "test1 - Clone"
