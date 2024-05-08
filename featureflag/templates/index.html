@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Feature Flags</title>
+</head>
+<body>
+    <h1>Feature Flags</h1>
+    <ul>
+        {% for flag in feature_flags %}
+            <li>{{ flag.name }} - {% if flag.is_enabled %}Enabled{% else %}Disabled{% endif %}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
