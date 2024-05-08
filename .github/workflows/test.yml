@@ -1,0 +1,43 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Add steps to set up your environment, install dependencies, etc.
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      # Define environment variable to store the status of the feature flag
+      - name: Get feature flag status
+        id: flag_status
+        run: |
+          # Command to fetch the status of the feature flag and store it in an environment variable
+          # Replace the command with your actual implementation
+          export FLAG_STATUS=$(python get_flag_status.py)
+
+      # Run tests based on the status of the feature flag
+      - name: Run Tests
+        run: |
+          if [ "$FLAG_STATUS" = "on" ]; then
+            # Run tests that should be executed when the feature flag is 'on'
+            pytest tests/feature_enabled_tests.py
+          else
+            # Run tests that should be executed when the feature flag is 'off'
+            pytest tests/feature_disabled_tests.py
+          fi
