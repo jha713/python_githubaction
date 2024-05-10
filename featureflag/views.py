@@ -1,39 +1,66 @@
-# views.py
+import time
+import threading
+import requests
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from featureflags.evaluations.auth_target import Target
+from featureflags.client import CfClient
+from featureflags.util import log
+from featureflags.config import with_base_url
+from featureflags.config import with_events_url
 
-from django.http import HttpResponse
-from .cf_client_configuration import cf_client
+# Initialize a global variable to hold the current feature flag status
+current_flag_status = False
+# Initialize a threading Event to control the continuous polling
+stop_event = threading.Event()
 
-def index(request):
-    # Initialize CfClient using the API key
-    api_key = "your_api_key_here"
-    client = cf_client(api_key)
+# Your Django view that will receive events from Harness.io
+@csrf_exempt
+@require_POST
+def event_receiver(request):
+    global current_flag_status
+    # Extract data from the request
+    data = request.POST
+    flag_status = data.get('flag_status')
 
-    # Get the status of the feature flag
-    flag_name = "your_flag_name_here"
-    flag_enabled = client.bool_variation(flag_name, None, False)
+    # Perform any necessary processing with the flag status
+    # For example, you could update a database record or trigger some action based on the flag status
 
-    # Your business logic based on the feature flag status
-    if flag_enabled:
-        # Feature flag is enabled, execute code accordingly
-        response = "Feature flag is enabled. Performing enabled action..."
-    else:
-        # Feature flag is disabled, execute alternative code
-        response = "Feature flag is disabled. Performing alternative action..."
+    # Return a JSON response indicating successful processing
+    return JsonResponse({'message': 'Event received and processed successfully.'})
 
-    return HttpResponse(response)
+# Function to continuously poll Harness.io for feature flag updates
+def poll_harness():
+    global current_flag_status
+    log.debug("Starting continuous polling")
+    api_key = "14bf5a69-086f-4ef7-ad06-f7f0a73c4509"
+    client = CfClient(api_key,
+                      with_base_url("https://config.ff.harness.io/api/1.0"),
+                      with_events_url("https://events.ff.harness.io/api/1.0"))
+    target = Target(identifier='python_githubaction', name="target1")
+    while not stop_event.is_set():
+        result = client.bool_variation('githubaction', target, False)
+        log.debug("Result %s", result)
+        # Convert the result to a boolean before comparison
+        result = bool(result)
+        # If the flag status has changed, send an event to the Django application
+        if result != current_flag_status:
+            current_flag_status = result
+            # Send an HTTP POST request to the event_receiver endpoint with the updated status
+            requests.post('http://127.0.0.1:8002/event_receiver/', data={'flag_status': str(result)})
+        time.sleep(10)  # Polling interval
 
+# Your main entry point
+def main():
+    log.debug("Starting example")
+    # Start the continuous polling in a separate thread
+    polling_thread = threading.Thread(target=poll_harness)
+    polling_thread.start()
 
-
-# from django.shortcuts import render
-# from .cf_client_configuration import CfClientConfiguration
-
-# def index(request):
-#     # Instantiate CfClientConfiguration and get feature flag status
-#     cf_client = CfClientConfiguration()
-#     cf_client.get_feature_flag_status()
-
-#     # Retrieve the feature flag status and pass it to the template
-#     flag_status = "Enabled"  # Replace with the actual flag status obtained from CfClientConfiguration
-#     context = {'flag_status': flag_status}
-
-#     return render(request, 'index.html', context)
+# Your Django view to stop the continuous polling
+def stop_continuous_polling(request):
+    global stop_event
+    log.debug("Stopping continuous polling")
+    stop_event.set()
+    return HttpResponse("Continuous polling stopped.", status=200)
