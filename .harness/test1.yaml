@@ -6,3 +6,12 @@ pipeline:
   tags: {}
   stages:
     - test1: 1
+    - stage:
+        name: stages2
+        identifier: stages2
+        description: ""
+        type: Pipeline
+        spec:
+          org: default
+          pipeline: test1_Clone
+          project: python_githubaction
