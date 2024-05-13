@@ -19,7 +19,7 @@ featureFlags:
       - identifier: env
         default:
           onVariation: "false"
-          offVariation: "false"
+          offVariation: "true"
         state: "on"
         targetRules:
         - targets:
