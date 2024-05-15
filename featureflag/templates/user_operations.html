@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Operations</title>
+</head>
+<body>
+    <h1>User Operations</h1>
+    {% if githubaction_flag_enabled %}
+        <h2>Create User</h2>
+        <!-- Form for creating a new user -->
+        <form method="post">
+            <label for="name">Name:</label><br>
+            <input type="text" id="name" name="name"><br>
+            <label for="age">Age:</label><br>
+            <input type="number" id="age" name="age"><br>
+            <label for="address">Address:</label><br>
+            <input type="text" id="address" name="address"><br><br>
+            <input type="submit" value="Create User">
+        </form>
+    {% endif %}
+    
+    {% if featureflagvalue2_flag_enabled %}
+        <h2>User List</h2>
+        <!-- Display user list -->
+        <ul>
+            {% for user in user_list %}
+                <li>{{ user.name }} - {{ user.age }} - {{ user.address }}</li>
+            {% endfor %}
+        </ul>
+        {% if githubaction_flag_enabled %}
+            <!-- Edit and delete buttons -->
+            <p>Edit | Delete</p>
+        {% endif %}
+    {% endif %}
+</body>
+</html>

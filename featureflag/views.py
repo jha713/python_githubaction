@@ -1,109 +1,124 @@
-import json
-import time
-import threading
-import requests
-from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from featureflags.evaluations.auth_target import Target
-from featureflags.client import CfClient
-from featureflags.util import log
-from featureflags.config import with_base_url
-from featureflags.config import with_events_url
-import logging
-from featureflags.client import CfClient
-from featureflags.config import *
-from featureflags.util import log
+# views.py
 import os
-import asyncio 
-from featureflags import sse_client
-from featureflags.sse_client import Event as E
+import subprocess
 import redis
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-#logging.basicConfig(level=logging.DEBUG)
-#logger = logging.getLogger(__name__)
-
-# Initialize a global variable to hold the current feature flag status
-current_flag_status = False
-# Initialize a threading Event to control the continuous polling
-stop_event = threading.Event()
-# API Key
-api_key = os.getenv('FF_API_KEY', "")
-
-# Flag Name
-flagName = os.getenv('FF_FLAG_NAME', "test")
-
-configURL = os.environ.get("FF_CONFIG_URL", "https://ffserver:8000/api/1.0")
-eventsURL = os.environ.get("FF_CONFIG_URL", "https://ffserver:8001/api/1.0")
-
-
-previousDict= {}
-
-
-keys=["githubaction","featureflagvalue2"]
-
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import User
 
 # Initialize a Redis client with the specified host and password
-r = redis.Redis(host='redis-10120.c321.us-east-1-2.ec2.redns.redis-cloud.com', port=10120, db=0, password='vw7NTK5m3dsYKPg6E5eb1oKXKzCFPLU9',decode_responses=True)
-# Ping the Redis server
-try:
-    response = r.ping()
-    print("Redis server is running:", response)
-except redis.ConnectionError:
-    print("Unable to connect to Redis server.")
+r = redis.Redis(
+    host='redis-10120.c321.us-east-1-2.ec2.redns.redis-cloud.com',
+    port=10120,
+    db=0,
+    password='vw7NTK5m3dsYKPg6E5eb1oKXKzCFPLU9',
+    decode_responses=True
+)
 
-
-def onFeatureFlagValueChanged(featureFlagName, previousValue,currentValue):
-    if previousValue !=currentValue:
-     print(f"Feature flag value: {featureFlagName} has changed From  {previousValue} to {currentValue}")
-     r.set(featureFlagName,int(currentValue))
-     
-@require_GET
+# @api_view(['GET'])
+# def get_feature_flag_value(request):
+#     key = request.GET.get('key')
+#     if key:
+#         value = r.get(key)
+#         if value:
+#             return Response({'value': value})
+#         else:
+#             return Response({'error': 'No value found for the given key.'}, status=404)
+#     else:
+#         return Response({'value': 'default_value'})
+@api_view(['GET'])
 def get_feature_flag_value(request):
-    key = request.GET.get('key')
-    if key:
-        value = r.get(key)
-        print("Feature flag value", value)
-        if value:
-            return JsonResponse({'value': value.decode('utf-8')})
-        else:
-            return JsonResponse({'error': 'No value found for the given key.'})
-    else:
-        return JsonResponse({'value': 'default_value'})
-   
-async def checkFFStatus():
+    data = request.query_params  # Use query_params to access GET parameters
+    keys = data.getlist('key')  # Get a list of all 'key' parameters
+    response_data = {}
 
     for key in keys:
-     print(f"current value of {key} is{r.get({key})}")
-   
-    log.setLevel(logging.INFO)
-    log.info("Harness SDK Getting Started")
-    api_key = "14bf5a69-086f-4ef7-ad06-f7f0a73c4509"
-    api_key2 = "6cf39c1b-4d5d-4fc2-9a84-e37c67a3d1f8"#api key for featureflagvalue2
-  
-    # Create a Feature Flag Client
-    client = CfClient(api_key,Config(enable_stream=False,enable_analytics=False,pull_interval=1))
-    client.wait_for_initialization()
+        value = r.get(key)
+        if value is not None:
+            response_data[key] = value
+        else:
+            response_data[key] = 'No value found for the given key.'
 
+    return Response(response_data)
 
-   
-    # Create a target (different targets can get different results based on
-    target = Target(identifier='python_githubaction')
+@api_view(['POST', 'GET'])
+def user_operations(request):
+    # Check if the githubaction flag is enabled
+    githubaction_flag_status = int(r.get("githubaction") or 0)
     
-    # Loop forever reporting the state of the flag.  If there is an error
-    # the default value will be returned
-    while True:
-        for eachKey in keys:   
-          result = client.bool_variation(eachKey, target, False)
-          if eachKey not in previousDict.keys():
-              previousDict[eachKey] = result
-          onFeatureFlagValueChanged(eachKey,previousDict[eachKey],result)
-          previousDict[eachKey] = result
-          
+    if githubaction_flag_status == 1:  # If githubaction flag is enabled
+        # Trigger GitHub Actions workflow
+        #trigger_github_actions_workflow()
+        if request.method == 'POST':  # If request is for user creation
+            # Create user with provided data
+            # Assuming data is sent in JSON format with keys: name, age, address
+            data = request.data
+            name = data.get('name')
+            age = data.get('age')
+            address = data.get('address')
+            # Perform user creation logic here
+            user = User.objects.create(name=name, age=age, address=address)
+            return Response({'message': 'User created successfully.'})
+            
+        elif request.method == 'GET':  # If request is for user list
+            # Fetch and return user list
+            user_list = list(User.objects.all().values())  # Fetch user list from database
+            return Response({'user_list': user_list})
+    else:
+        return Response({'message': 'Feature not enabled.'}, status=403)  # Return forbidden status if feature flag is not enabled
+    
+@api_view(['PUT', 'DELETE'])
+def edit_delete_user(request, user_id):
+    # Check if the featureflagvalue2 flag is enabled
+    featureflagvalue2_flag_status = int(r.get("featureflagvalue2") or 0)
+    
+    if featureflagvalue2_flag_status == 1:  # If featureflagvalue2 flag is enabled
+        if request.method == 'PUT':  # If request is for editing a user
+            try:
+                # Fetch the user to be edited
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return Response({'error': 'User not found.'}, status=404)
+            
+            # Assuming data is sent in JSON format with keys: name, age, address
+            data = request.data
+            name = data.get('name')
+            age = data.get('age')
+            address = data.get('address')
+            
+            # Update the user's data
+            user.name = name
+            user.age = age
+            user.address = address
+            user.save()
+            
+            return Response({'message': 'User updated successfully.'})
+            
+        elif request.method == 'DELETE':  # If request is for deleting a user
+            try:
+                # Fetch the user to be deleted
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return Response({'error': 'User not found.'}, status=404)
+            
+            # Delete the user
+            user.delete()
+            
+            return Response({'message': 'User deleted successfully.'})
+            
+    return Response({'message': 'Feature not enabled.'}, status=403)  # Return forbidden status if feature flag is not enabled
 
-       #print("Checking")
-        
-        await asyncio.sleep(1)
-#threading.Thread(target=run_check_ff_status).start()
-asyncio.run(checkFFStatus())
+def trigger_github_actions_workflow():
+    # Command to trigger GitHub Actions workflow
+    subprocess.run(['gh', 'workflow', 'run', '-R', 'python_githubaction', 'Run Tests'])
+
+def execute_tests():
+    # Command to execute tests
+    subprocess.run(['pytest', 'tests/'])
+
+def check_tests_success():
+    # Logic to check if tests were successful
+    # Assuming tests write output to a file 'test_output.txt' with 'SUCCESS' or 'FAILURE'
+    with open('test_output.txt', 'r') as f:
+        output = f.read()
+        return 'SUCCESS' in output
