@@ -1,5 +1,4 @@
 name: Run Tests
-
 on:
   push:
     branches:
@@ -13,11 +12,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Add steps to set up your environment, install dependencies, etc.
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
+<<<<<<< HEAD
           
       # Define environment variable to store the status of the feature flag
       - name: Get feature flag status
@@ -26,16 +25,13 @@ jobs:
           # Command to fetch the status of the feature flag and store it in an environment variable
           export GITHUBACTION_STATUS=$(python get_flag_status.py githubaction)
           export FEATUREFLAGVALUE2_STATUS=$(python get_flag_status.py featureflagvalue2)
+=======
 
-      # Run tests based on the status of the feature flag
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+>>>>>>> b53cabb (Update yml file)
+
       - name: Run Tests
         run: |
-         if [ "$GITHUBACTION_STATUS" = "1" ] or [ "$FEATUREFLAGVALUE2_STATUS" = "1" ]; then
-            # Run tests that should be executed when the feature flag is 'on'
-            pytest tests/feature_enabled_tests.py
-          elif
-            # Run tests that should be executed when the feature flag is 'off'
-            pytest tests/feature_disabled_tests.py
-          else
-            # Run tests that should be executed when the feature flag is not set
-            pytest tests/feature_not_set_tests.py
+          pytest featureflag/test.py
