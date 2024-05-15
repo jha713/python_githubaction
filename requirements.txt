@@ -2,6 +2,7 @@ asgiref==3.4.1
 certifi==2024.2.2
 charset-normalizer==2.0.0
 Django==3.2.12
+djangorestframework==3.13.1
 idna==3.3
 PyYAML==6.0.1
 requests==2.26.0
