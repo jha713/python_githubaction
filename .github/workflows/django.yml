@@ -27,4 +27,4 @@ jobs:
          export DJANGO_SETTINGS_MODULE=githubaction.settings
 
       - name: Run Tests
-        run: pytest featureflag/test.py
+        run: python manage.py test featureflag
