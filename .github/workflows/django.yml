@@ -16,21 +16,10 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-<<<<<<< HEAD
-          
-      # Define environment variable to store the status of the feature flag
-      - name: Get feature flag status
-        id: flag_status
-        run: |
-          # Command to fetch the status of the feature flag and store it in an environment variable
-          export GITHUBACTION_STATUS=$(python get_flag_status.py githubaction)
-          export FEATUREFLAGVALUE2_STATUS=$(python get_flag_status.py featureflagvalue2)
-=======
 
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
->>>>>>> b53cabb (Update yml file)
 
       - name: Run Tests
         run: |
