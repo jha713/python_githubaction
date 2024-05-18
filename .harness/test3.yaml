@@ -1,0 +1,54 @@
+featureFlags:
+  flags:
+  - flag:
+      name: featureflagvalue2
+      identifier: featureflagvalue2
+      description: ""
+      permanent: false
+      spec:
+        type: boolean
+        default:
+          onVariation: "false"
+          offVariation: "false"
+        variations:
+        - identifier: "true"
+          value: "true"
+        - identifier: "false"
+          value: "false"
+      environments:
+      - identifier: env
+        default:
+          onVariation: "true"
+          offVariation: "false"
+        state: "on"
+        targetRules:
+        - targets:
+          - identifier: python_githubaction
+          variation: "true"
+  - flag:
+      name: githubaction
+      identifier: githubaction
+      description: ""
+      permanent: false
+      spec:
+        type: boolean
+        default:
+          onVariation: "true"
+          offVariation: "false"
+        variations:
+        - identifier: "true"
+          value: "true"
+        - identifier: "false"
+          value: "false"
+      environments:
+      - identifier: env
+        default:
+          onVariation: "true"
+          offVariation: "false"
+        state: "on"
+        targetRules:
+        - targets:
+          - identifier: python_githubaction
+          variation: "true"
+  projectIdentifier: python_githubaction
+  orgIdentifier: default
